@@ -1,0 +1,2 @@
+import {Cpu} from 'lucide-react';
+export default function Logo(){return <div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-xl bg-[#07162d] text-[#15d8e5] shadow-lg"><Cpu size={22}/></div><div><div className="font-black tracking-tight">IoT<span className="text-[#1677ff]">IC</span></div><div className="text-[10px] font-semibold uppercase tracking-[.22em] text-slate-500">Innovation Center</div></div></div>}

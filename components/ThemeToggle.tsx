@@ -1,0 +1,3 @@
+'use client';
+import {Moon,Sun} from 'lucide-react';import {useEffect,useState} from 'react';
+export default function ThemeToggle(){const [dark,setDark]=useState(false);useEffect(()=>{setDark(localStorage.getItem('iot-theme')==='dark')},[]);function toggle(){const n=!dark;setDark(n);localStorage.setItem('iot-theme',n?'dark':'light');document.documentElement.classList.toggle('dark',n)}return <button aria-label="Toggle theme" onClick={toggle} className="grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700">{dark?<Sun size={18}/>:<Moon size={18}/>}</button>}
