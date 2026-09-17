@@ -1,4 +1,239 @@
 'use client';
-import {FormEvent,useState} from 'react';import {useRouter,useSearchParams} from 'next/navigation';import {Eye,EyeOff,LockKeyhole,Mail,ShieldCheck,UserRound} from 'lucide-react';import Logo from '@/components/Logo';import {supabase} from '@/lib/supabase';
-export default function Login(){const router=useRouter();const params=useSearchParams();const [role,setRole]=useState(params.get('role')==='faculty'?'faculty':'student');const [email,setEmail]=useState('');const [password,setPassword]=useState('');const [show,setShow]=useState(false);const [loading,setLoading]=useState(false);const [error,setError]=useState('');async function submit(e:FormEvent){e.preventDefault();setLoading(true);setError('');const {data,error}=await supabase.auth.signInWithPassword({email,password});if(error){setError(error.message);setLoading(false);return}const {data:p}=await supabase.from('profiles').select('role').eq('id',data.user.id).single();if(p?.role!==role && p?.role!=='admin'){await supabase.auth.signOut();setError(`This account is not registered as ${role}.`);setLoading(false);return}router.push(p?.role==='student'?'/dashboard/student':'/dashboard/faculty');}
-return <main className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_20%_20%,#dffaff,transparent_30%),#f6f8fc] p-5"><div className="grid w-full max-w-5xl overflow-hidden rounded-[30px] bg-white shadow-2xl lg:grid-cols-2"><div className="hidden bg-[#07162d] p-12 text-white lg:block"><Logo/><div className="mt-24"><div className="text-sm font-bold uppercase tracking-[.2em] text-cyan-300">Secure access</div><h1 className="mt-4 text-5xl font-black leading-tight">One portal for the entire IoT ecosystem.</h1><p className="mt-5 max-w-md leading-7 text-slate-400">Collaborate with faculty, track project work, submit tasks and stay connected to your center.</p><div className="mt-10 flex gap-3"><div className="rounded-2xl border border-white/10 bg-white/5 p-4"><ShieldCheck className="text-cyan-300"/><div className="mt-3 font-bold">Role-based</div><div className="text-xs text-slate-400">Protected workspaces</div></div><div className="rounded-2xl border border-white/10 bg-white/5 p-4"><LockKeyhole className="text-blue-300"/><div className="mt-3 font-bold">Secure</div><div className="text-xs text-slate-400">Supabase Auth + RLS</div></div></div></div></div><div className="p-7 sm:p-12"><Logo/><div className="mt-10"><h2 className="text-3xl font-black">Welcome back</h2><p className="mt-2 text-slate-500">Sign in to continue to your workspace.</p><div className="mt-7 grid grid-cols-2 rounded-xl bg-slate-100 p-1"><button onClick={()=>setRole('student')} className={`rounded-lg py-2.5 text-sm font-bold ${role==='student'?'bg-white shadow-sm':''}`}>Student</button><button onClick={()=>setRole('faculty')} className={`rounded-lg py-2.5 text-sm font-bold ${role==='faculty'?'bg-white shadow-sm':''}`}>Faculty</button></div><form onSubmit={submit} className="mt-6 space-y-4"><label className="block text-sm font-bold">Email / ID<div className="relative mt-2"><Mail className="absolute left-3 top-3.5 text-slate-400" size={18}/><input required type="email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-3 outline-none focus:border-blue-500" placeholder="you@college.edu"/></div></label><label className="block text-sm font-bold">Password<div className="relative mt-2"><LockKeyhole className="absolute left-3 top-3.5 text-slate-400" size={18}/><input required minLength={6} type={show?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)} className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-11 outline-none focus:border-blue-500" placeholder="••••••••"/><button type="button" onClick={()=>setShow(!show)} className="absolute right-3 top-3.5 text-slate-400">{show?<EyeOff size={18}/>:<Eye size={18}/>}</button></div></label>{error&&<div className="rounded-xl bg-red-50 p-3 text-sm text-red-600">{error}</div>}<button disabled={loading} className="btn btn-primary w-full py-3.5">{loading?'Signing in…':`Sign in as ${role}`}</button><button type="button" className="w-full text-sm font-bold text-blue-600">Forgot password?</button></form><div className="mt-7 flex items-center gap-2 text-xs text-slate-400"><UserRound size={14}/> Demo accounts can be seeded through Supabase.</div></div></div></div></main>}
+
+import { FormEvent, Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+
+import {
+  Eye,
+  EyeOff,
+  LockKeyhole,
+  Mail,
+  ShieldCheck,
+  UserRound,
+} from 'lucide-react';
+
+import Logo from '@/components/Logo';
+import { supabase } from '@/lib/supabase';
+
+function LoginForm() {
+  const router = useRouter();
+  const params = useSearchParams();
+
+  const [role, setRole] = useState(
+    params.get('role') === 'faculty' ? 'faculty' : 'student'
+  );
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [show, setShow] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+
+    setLoading(true);
+    setError('');
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+      return;
+    }
+
+    const { data: p } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', data.user.id)
+      .single();
+
+    if (p?.role !== role && p?.role !== 'admin') {
+      await supabase.auth.signOut();
+      setError(`This account is not registered as ${role}.`);
+      setLoading(false);
+      return;
+    }
+
+    router.push(
+      p?.role === 'student'
+        ? '/dashboard/student'
+        : '/dashboard/faculty'
+    );
+  }
+
+  return (
+    <main className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_20%_20%,#dffaff,transparent_30%),#f6f8fc] p-5">
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-[30px] bg-white shadow-2xl lg:grid-cols-2">
+
+        <div className="hidden bg-[#07162d] p-12 text-white lg:block">
+          <Logo />
+
+          <div className="mt-24">
+            <div className="text-sm font-bold uppercase tracking-[.2em] text-cyan-300">
+              Secure access
+            </div>
+
+            <h1 className="mt-4 text-5xl font-black leading-tight">
+              One portal for the entire IoT ecosystem.
+            </h1>
+
+            <p className="mt-5 max-w-md leading-7 text-slate-400">
+              Collaborate with faculty, track project work, submit tasks and
+              stay connected to your center.
+            </p>
+
+            <div className="mt-10 flex gap-3">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <ShieldCheck className="text-cyan-300" />
+                <div className="mt-3 font-bold">Role-based</div>
+                <div className="text-xs text-slate-400">
+                  Protected workspaces
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <LockKeyhole className="text-blue-300" />
+                <div className="mt-3 font-bold">Secure</div>
+                <div className="text-xs text-slate-400">
+                  Supabase Auth + RLS
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-7 sm:p-12">
+          <Logo />
+
+          <div className="mt-10">
+            <h2 className="text-3xl font-black">
+              Welcome back
+            </h2>
+
+            <p className="mt-2 text-slate-500">
+              Sign in to continue to your workspace.
+            </p>
+
+            <div className="mt-7 grid grid-cols-2 rounded-xl bg-slate-100 p-1">
+              <button
+                onClick={() => setRole('student')}
+                className={`rounded-lg py-2.5 text-sm font-bold ${
+                  role === 'student' ? 'bg-white shadow-sm' : ''
+                }`}
+              >
+                Student
+              </button>
+
+              <button
+                onClick={() => setRole('faculty')}
+                className={`rounded-lg py-2.5 text-sm font-bold ${
+                  role === 'faculty' ? 'bg-white shadow-sm' : ''
+                }`}
+              >
+                Faculty
+              </button>
+            </div>
+
+            <form onSubmit={submit} className="mt-6 space-y-4">
+
+              <label className="block text-sm font-bold">
+                Email / ID
+
+                <div className="relative mt-2">
+                  <Mail
+                    className="absolute left-3 top-3.5 text-slate-400"
+                    size={18}
+                  />
+
+                  <input
+                    required
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-3 outline-none focus:border-blue-500"
+                    placeholder="you@college.edu"
+                  />
+                </div>
+              </label>
+
+              <label className="block text-sm font-bold">
+                Password
+
+                <div className="relative mt-2">
+                  <LockKeyhole
+                    className="absolute left-3 top-3.5 text-slate-400"
+                    size={18}
+                  />
+
+                  <input
+                    required
+                    minLength={6}
+                    type={show ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-11 outline-none focus:border-blue-500"
+                    placeholder="••••••••"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShow(!show)}
+                    className="absolute right-3 top-3.5 text-slate-400"
+                  >
+                    {show ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
+                  </button>
+                </div>
+              </label>
+
+              {error && (
+                <div className="rounded-xl bg-red-50 p-3 text-sm text-red-600">
+                  {error}
+                </div>
+              )}
+
+              <button
+                disabled={loading}
+                className="btn btn-primary w-full py-3.5"
+              >
+                {loading
+                  ? 'Signing in…'
+                  : `Sign in as ${role}`}
+              </button>
+
+              <button
+                type="button"
+                className="w-full text-sm font-bold text-blue-600"
+              >
+                Forgot password?
+              </button>
+
+            </form>
+
+            <div className="mt-7 flex items-center gap-2 text-xs text-slate-400">
+              <UserRound size={14} />
+              Demo accounts can be seeded through Supabase.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
