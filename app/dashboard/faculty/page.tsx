@@ -1,3 +1,273 @@
-'use client';import DashboardShell from '@/components/DashboardShell';import StatCard from '@/components/StatCard';import {BookOpen,CalendarDays,CheckCircle2,FolderKanban,Users,Plus,ArrowUpRight,TrendingUp} from 'lucide-react';import Link from 'next/link';import {BarChart,Bar,ResponsiveContainer,XAxis,Tooltip} from 'recharts';
-const data=[{name:'Mon',tasks:12},{name:'Tue',tasks:18},{name:'Wed',tasks:15},{name:'Thu',tasks:22},{name:'Fri',tasks:19},{name:'Sat',tasks:9}];
-export default function FacultyDashboard(){return <DashboardShell role="faculty" title="Faculty Dashboard"><div className="mb-7 flex flex-col justify-between gap-5 sm:flex-row sm:items-end"><div><div className="text-sm font-bold text-blue-600">Faculty Console</div><h2 className="mt-1 text-3xl font-black">Good morning, Faculty</h2><p className="mt-2 text-sm text-slate-500">Manage learning, research and project activity from one place.</p></div><div className="flex gap-2"><Link className="btn btn-primary" href="/dashboard/faculty/tasks"><Plus size={16}/> Create Task</Link><Link className="btn btn-ghost" href="/dashboard/faculty/announcements"><Plus size={16}/> Announcement</Link></div></div><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6"><StatCard label="Total Students" value={128} icon={Users} trend="+8%"/><StatCard label="Active Projects" value={21} icon={FolderKanban}/><StatCard label="Pending Submissions" value={17} icon={BookOpen}/><StatCard label="Completed Tasks" value={94} icon={CheckCircle2} trend="+12%"/><StatCard label="Active Groups" value={14} icon={Users}/><StatCard label="Upcoming Events" value={5} icon={CalendarDays}/></div><div className="mt-7 grid gap-5 xl:grid-cols-[1.3fr_.7fr]"><section className="card p-5"><div className="flex justify-between"><div><h3 className="font-extrabold">Student Activity</h3><p className="mt-1 text-xs text-slate-400">Task activity over the last 6 days</p></div><TrendingUp className="text-blue-600" size={20}/></div><div className="mt-6 h-72"><ResponsiveContainer width="100%" height="100%"><BarChart data={data}><XAxis dataKey="name" axisLine={false} tickLine={false}/><Tooltip cursor={{fill:'rgba(22,119,255,.05)'}}/><Bar dataKey="tasks" radius={[8,8,0,0]} fill="#1677ff"/></BarChart></ResponsiveContainer></div></section><section className="card"><div className="border-b p-5"><h3 className="font-extrabold">Pending Reviews</h3><p className="mt-1 text-xs text-slate-400">Submissions needing attention</p></div><div className="divide-y">{[['ESP32 sensor node','Arun Kumar'],['Smart Campus Dashboard','Santhosh'],['Autonomous mobility report','Vignesh'],['LoRa gateway testing','Priya']].map(([a,b])=><div className="flex items-center justify-between p-4" key={a}><div><div className="text-sm font-bold">{a}</div><div className="mt-1 text-xs text-slate-400">{b}</div></div><ArrowUpRight size={17} className="text-slate-400"/></div>)}</div></section></div></DashboardShell>}
+'use client';
+
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+
+type Counts = {
+  students: number;
+  groups: number;
+  announcements: number;
+  tasks: number;
+  topics: number;
+  projects: number;
+  events: number;
+  resources: number;
+  gallery: number;
+};
+
+export default function FacultyDashboard() {
+  const [counts, setCounts] = useState<Counts>({
+    students: 0,
+    groups: 0,
+    announcements: 0,
+    tasks: 0,
+    topics: 0,
+    projects: 0,
+    events: 0,
+    resources: 0,
+    gallery: 0,
+  });
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  async function loadDashboard() {
+    setLoading(true);
+    setError('');
+
+    const [
+      students,
+      groups,
+      announcements,
+      tasks,
+      topics,
+      projects,
+      events,
+      resources,
+      gallery,
+    ] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .eq('role', 'student'),
+
+      supabase
+        .from('groups')
+        .select('id', { count: 'exact', head: true }),
+
+      supabase
+        .from('announcements')
+        .select('id', { count: 'exact', head: true }),
+
+      supabase
+        .from('tasks')
+        .select('id', { count: 'exact', head: true }),
+
+      supabase
+        .from('topics')
+        .select('id', { count: 'exact', head: true }),
+
+      supabase
+        .from('projects')
+        .select('id', { count: 'exact', head: true }),
+
+      supabase
+        .from('events')
+        .select('id', { count: 'exact', head: true }),
+
+      supabase
+        .from('resources')
+        .select('id', { count: 'exact', head: true }),
+
+      supabase
+        .from('gallery')
+        .select('id', { count: 'exact', head: true }),
+    ]);
+
+    const firstError =
+      students.error ||
+      groups.error ||
+      announcements.error ||
+      tasks.error ||
+      topics.error ||
+      projects.error ||
+      events.error ||
+      resources.error ||
+      gallery.error;
+
+    if (firstError) {
+      setError(firstError.message);
+    }
+
+    setCounts({
+      students: students.count || 0,
+      groups: groups.count || 0,
+      announcements: announcements.count || 0,
+      tasks: tasks.count || 0,
+      topics: topics.count || 0,
+      projects: projects.count || 0,
+      events: events.count || 0,
+      resources: resources.count || 0,
+      gallery: gallery.count || 0,
+    });
+
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  const cards = [
+    {
+      title: 'Students',
+      value: counts.students,
+      icon: '👨‍🎓',
+      link: '/dashboard/faculty/students',
+    },
+    {
+      title: 'Groups',
+      value: counts.groups,
+      icon: '👥',
+      link: '/dashboard/faculty/groups',
+    },
+    {
+      title: 'Announcements',
+      value: counts.announcements,
+      icon: '📢',
+      link: '/dashboard/faculty/announcements',
+    },
+    {
+      title: 'Tasks',
+      value: counts.tasks,
+      icon: '📝',
+      link: '/dashboard/faculty/tasks',
+    },
+    {
+      title: 'Topics',
+      value: counts.topics,
+      icon: '📚',
+      link: '/dashboard/faculty/topics',
+    },
+    {
+      title: 'Projects',
+      value: counts.projects,
+      icon: '🚀',
+      link: '/dashboard/faculty/projects',
+    },
+    {
+      title: 'Events',
+      value: counts.events,
+      icon: '📅',
+      link: '/dashboard/faculty/events',
+    },
+    {
+      title: 'Resources',
+      value: counts.resources,
+      icon: '📖',
+      link: '/dashboard/faculty/resources',
+    },
+    {
+      title: 'Gallery',
+      value: counts.gallery,
+      icon: '🖼️',
+      link: '/dashboard/faculty/gallery',
+    },
+  ];
+
+  return (
+    <main className="min-h-screen bg-slate-50 p-6 md:p-10">
+      <div className="mx-auto max-w-7xl">
+
+        {/* Header */}
+        <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-wider text-blue-600">
+              IoT Innovation Center
+            </p>
+
+            <h1 className="mt-2 text-4xl font-black text-slate-900">
+              Faculty Dashboard
+            </h1>
+
+            <p className="mt-2 text-slate-500">
+              Manage students, research activities and portal content.
+            </p>
+          </div>
+
+          <button
+            onClick={loadDashboard}
+            className="rounded-xl bg-blue-600 px-5 py-3 font-bold text-white shadow-lg hover:bg-blue-700"
+          >
+            ↻ Refresh Dashboard
+          </button>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
+            <p className="font-bold">
+              Some dashboard data could not be loaded
+            </p>
+
+            <p className="mt-1 text-sm">
+              {error}
+            </p>
+          </div>
+        )}
+
+        {/* Cards */}
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+
+          {cards.map((card) => (
+            <a
+              key={card.title}
+              href={card.link}
+              className="group rounded-2xl border bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+            >
+              <div className="flex items-start justify-between">
+
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-2xl">
+                  {card.icon}
+                </div>
+
+                <span className="text-slate-300 transition group-hover:text-blue-500">
+                  →
+                </span>
+
+              </div>
+
+              <p className="mt-5 text-sm font-bold text-slate-500">
+                {card.title}
+              </p>
+
+              <p className="mt-1 text-4xl font-black text-slate-900">
+                {loading ? '...' : card.value}
+              </p>
+
+              <p className="mt-2 text-xs text-slate-400">
+                View details →
+              </p>
+            </a>
+          ))}
+
+        </div>
+
+        {/* Quick Info */}
+        <div className="mt-8 rounded-2xl border bg-white p-6 shadow-sm">
+
+          <h2 className="text-xl font-black text-slate-900">
+            Portal Overview
+          </h2>
+
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            All statistics shown above are loaded directly from your
+            Supabase database. No dummy data is used.
+          </p>
+
+        </div>
+
+      </div>
+    </main>
+  );
+}
