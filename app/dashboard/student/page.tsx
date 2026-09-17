@@ -1,2 +1,192 @@
-'use client';import DashboardShell from '@/components/DashboardShell';import StatCard from '@/components/StatCard';import StatusPill from '@/components/StatusPill';import {Bell,CalendarDays,CheckCircle2,Clock3,FolderKanban,Users,ArrowUpRight,MessageCircle,Wifi} from 'lucide-react';import Link from 'next/link';
-export default function StudentDashboard(){return <DashboardShell role="student" title="Student Dashboard"><div className="mb-7 rounded-[24px] bg-[#07162d] p-7 text-white shadow-soft"><div className="flex flex-col justify-between gap-6 md:flex-row md:items-center"><div><div className="text-sm font-semibold text-cyan-300">Good morning 👋</div><h2 className="mt-1 text-3xl font-black">Welcome back, Student</h2><p className="mt-2 text-sm text-slate-400">Here’s what needs your attention today.</p></div><Link href="/dashboard/student/tasks" className="btn bg-white text-[#07162d]">View my tasks <ArrowUpRight size={16}/></Link></div></div><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5"><StatCard label="Pending Tasks" value={4} icon={Clock3}/><StatCard label="Completed Tasks" value={12} icon={CheckCircle2} trend="+18%"/><StatCard label="Active Projects" value={2} icon={FolderKanban}/><StatCard label="Group Members" value={5} icon={Users}/><StatCard label="Upcoming Deadlines" value={3} icon={CalendarDays}/></div><div className="mt-7 grid gap-5 xl:grid-cols-[1.35fr_.65fr]"><section className="card overflow-hidden"><div className="flex items-center justify-between border-b p-5"><div><h3 className="font-extrabold">Assigned Tasks</h3><p className="mt-1 text-xs text-slate-400">Your latest academic work</p></div><Link className="text-sm font-bold text-blue-600" href="/dashboard/student/tasks">View all</Link></div><div className="divide-y">{[['Build an ESP32 Temperature Monitoring System','25 Sep 2026','in_progress'],['Literature Review — Smart Agriculture','28 Sep 2026','pending'],['Prepare project demo documentation','30 Sep 2026','submitted']].map(([a,b,c])=><div key={a} className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"><div><div className="font-bold">{a}</div><div className="mt-1 text-xs text-slate-400">Deadline · {b}</div></div><StatusPill status={c as any}/></div>)}</div></section><section className="card p-5"><div className="flex items-center justify-between"><h3 className="font-extrabold">Recent Activity</h3><Bell size={18} className="text-slate-400"/></div><div className="mt-5 space-y-5">{[['Faculty posted a new task','10 min ago',Wifi],['Team Alpha uploaded a file','1 hr ago',FolderKanban],['You received feedback','Yesterday',MessageCircle]].map(([t,time,I])=><div className="flex gap-3" key={t as string}><div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-600"><I size={16}/></div><div><div className="text-sm font-bold">{t}</div><div className="mt-1 text-xs text-slate-400">{time}</div></div></div>)}</div></section></div></DashboardShell>}
+'use client';
+
+import DashboardShell from '@/components/DashboardShell';
+import StatCard from '@/components/StatCard';
+import StatusPill from '@/components/StatusPill';
+
+import {
+  Bell,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  FolderKanban,
+  Users,
+  ArrowUpRight,
+  MessageCircle,
+  Wifi,
+} from 'lucide-react';
+
+import type { LucideIcon } from 'lucide-react';
+import Link from 'next/link';
+
+const activities: [string, string, LucideIcon][] = [
+  ['Faculty posted a new task', '10 min ago', Wifi],
+  ['Team Alpha uploaded a file', '1 hr ago', FolderKanban],
+  ['You received feedback', 'Yesterday', MessageCircle],
+];
+
+export default function StudentDashboard() {
+  return (
+    <DashboardShell role="student" title="Student Dashboard">
+
+      <div className="mb-7 rounded-[24px] bg-[#07162d] p-7 text-white shadow-soft">
+        <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
+
+          <div>
+            <div className="text-sm font-semibold text-cyan-300">
+              Good morning 👋
+            </div>
+
+            <h2 className="mt-1 text-3xl font-black">
+              Welcome back, Student
+            </h2>
+
+            <p className="mt-2 text-sm text-slate-400">
+              Here’s what needs your attention today.
+            </p>
+          </div>
+
+          <Link
+            href="/dashboard/student/tasks"
+            className="btn bg-white text-[#07162d]"
+          >
+            View my tasks
+            <ArrowUpRight size={16} />
+          </Link>
+
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <StatCard label="Pending Tasks" value={4} icon={Clock3} />
+        <StatCard
+          label="Completed Tasks"
+          value={12}
+          icon={CheckCircle2}
+          trend="+18%"
+        />
+        <StatCard label="Active Projects" value={2} icon={FolderKanban} />
+        <StatCard label="Group Members" value={5} icon={Users} />
+        <StatCard
+          label="Upcoming Deadlines"
+          value={3}
+          icon={CalendarDays}
+        />
+      </div>
+
+      <div className="mt-7 grid gap-5 xl:grid-cols-[1.35fr_.65fr]">
+
+        <section className="card overflow-hidden">
+
+          <div className="flex items-center justify-between border-b p-5">
+            <div>
+              <h3 className="font-extrabold">
+                Assigned Tasks
+              </h3>
+
+              <p className="mt-1 text-xs text-slate-400">
+                Your latest academic work
+              </p>
+            </div>
+
+            <Link
+              className="text-sm font-bold text-blue-600"
+              href="/dashboard/student/tasks"
+            >
+              View all
+            </Link>
+          </div>
+
+          <div className="divide-y">
+
+            {[
+              [
+                'Build an ESP32 Temperature Monitoring System',
+                '25 Sep 2026',
+                'in_progress',
+              ],
+              [
+                'Literature Review — Smart Agriculture',
+                '28 Sep 2026',
+                'pending',
+              ],
+              [
+                'Prepare project demo documentation',
+                '30 Sep 2026',
+                'submitted',
+              ],
+            ].map(([a, b, c]) => (
+
+              <div
+                key={a}
+                className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"
+              >
+
+                <div>
+                  <div className="font-bold">
+                    {a}
+                  </div>
+
+                  <div className="mt-1 text-xs text-slate-400">
+                    Deadline · {b}
+                  </div>
+                </div>
+
+                <StatusPill status={c as any} />
+
+              </div>
+
+            ))}
+
+          </div>
+        </section>
+
+        <section className="card p-5">
+
+          <div className="flex items-center justify-between">
+            <h3 className="font-extrabold">
+              Recent Activity
+            </h3>
+
+            <Bell
+              size={18}
+              className="text-slate-400"
+            />
+          </div>
+
+          <div className="mt-5 space-y-5">
+
+            {activities.map(([t, time, Icon]) => (
+
+              <div
+                className="flex gap-3"
+                key={t}
+              >
+
+                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-600">
+                  <Icon size={16} />
+                </div>
+
+                <div>
+                  <div className="text-sm font-bold">
+                    {t}
+                  </div>
+
+                  <div className="mt-1 text-xs text-slate-400">
+                    {time}
+                  </div>
+                </div>
+
+              </div>
+
+            ))}
+
+          </div>
+
+        </section>
+
+      </div>
+
+    </DashboardShell>
+  );
+}
