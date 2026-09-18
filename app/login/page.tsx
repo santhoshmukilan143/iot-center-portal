@@ -54,14 +54,22 @@ function LoginForm() {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    if (!cleanEmail.endsWith('@ece.ritchennai.edu.in')) {
-      setError(
-        'Only Rajalakshmi Institute of Technology ECE college emails are allowed.'
-      );
-      setLoading(false);
-      return;
-    }
+   // Existing admin account is allowed to login
+if (cleanEmail === 's32214840@gmail.com') {
+  setRole('faculty');
+  setMode('login');
+  setLoading(false);
+  return;
+}
 
+// Students and faculty must use college email
+if (!cleanEmail.endsWith('@ece.ritchennai.edu.in')) {
+  setError(
+    'Only Rajalakshmi Institute of Technology ECE college emails are allowed.'
+  );
+  setLoading(false);
+  return;
+}
     const { data: approval, error: approvalError } = await supabase.rpc(
       'check_approved_email',
       {
