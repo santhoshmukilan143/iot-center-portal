@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import DashboardShell from '@/components/DashboardShell';
 import { supabase } from '@/lib/supabase';
+
 import {
   FolderKanban,
-  Github,
   ExternalLink,
   CalendarDays,
   RefreshCw,
@@ -52,7 +52,8 @@ export default function StudentProjectsPage() {
       .select('group_id')
       .eq('user_id', user.id);
 
-    const groupIds = memberships?.map((item) => item.group_id) || [];
+    const groupIds =
+      memberships?.map((item) => item.group_id) || [];
 
     let query = supabase
       .from('projects')
@@ -95,7 +96,9 @@ export default function StudentProjectsPage() {
     <DashboardShell role="student" title="Projects">
       <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h2 className="text-2xl font-black">My Projects</h2>
+          <h2 className="text-2xl font-black">
+            My Projects
+          </h2>
 
           <p className="mt-1 text-sm text-slate-400">
             Projects connected to your research groups.
@@ -105,8 +108,12 @@ export default function StudentProjectsPage() {
         <button
           onClick={loadProjects}
           className="btn border bg-white text-slate-700"
+          disabled={loading}
         >
-          <RefreshCw size={16} />
+          <RefreshCw
+            size={16}
+            className={loading ? 'animate-spin' : ''}
+          />
           Refresh
         </button>
       </div>
@@ -180,7 +187,12 @@ export default function StudentProjectsPage() {
                   <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
                     <div
                       className="h-full rounded-full bg-blue-600"
-                      style={{ width: `${project.progress}%` }}
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          Math.max(0, project.progress)
+                        )}%`,
+                      }}
                     />
                   </div>
                 </div>
@@ -205,6 +217,7 @@ export default function StudentProjectsPage() {
                   Created · {formatDate(project.created_at)}
                 </div>
 
+                {/* Links */}
                 <div className="mt-5 flex flex-wrap gap-2">
                   {project.github_url && (
                     <a
@@ -213,7 +226,7 @@ export default function StudentProjectsPage() {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 rounded-xl bg-[#07162d] px-4 py-2.5 text-xs font-bold text-white"
                     >
-                      <Github size={15} />
+                      <ExternalLink size={15} />
                       GitHub
                     </a>
                   )}
