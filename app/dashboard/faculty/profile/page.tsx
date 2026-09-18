@@ -3,12 +3,12 @@
 import { useEffect, useState } from 'react';
 import DashboardShell from '@/components/DashboardShell';
 import { supabase } from '@/lib/supabase';
+
 import {
   UserRound,
   Save,
   RefreshCw,
-  Github,
-  Linkedin,
+  ExternalLink,
 } from 'lucide-react';
 
 type Profile = {
@@ -39,12 +39,9 @@ const emptyForm = {
 };
 
 export default function FacultyProfilePage() {
-  const [profile, setProfile] =
-    useState<Profile | null>(null);
-
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
   const [form, setForm] = useState(emptyForm);
 
   async function loadProfile() {
@@ -87,8 +84,7 @@ export default function FacultyProfilePage() {
       });
     } catch (error: any) {
       alert(
-        error.message ||
-          'Unable to load profile.'
+        error.message || 'Unable to load profile.'
       );
     } finally {
       setLoading(false);
@@ -130,19 +126,14 @@ export default function FacultyProfilePage() {
         .from('profiles')
         .update({
           full_name: form.full_name.trim(),
-          avatar_url:
-            form.avatar_url.trim() || null,
-          department:
-            form.department.trim() || null,
-          designation:
-            form.designation.trim() || null,
+          avatar_url: form.avatar_url.trim() || null,
+          department: form.department.trim() || null,
+          designation: form.designation.trim() || null,
           bio: form.bio.trim() || null,
           skills,
           interests,
-          github:
-            form.github.trim() || null,
-          linkedin:
-            form.linkedin.trim() || null,
+          github: form.github.trim() || null,
+          linkedin: form.linkedin.trim() || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);
@@ -153,8 +144,7 @@ export default function FacultyProfilePage() {
       await loadProfile();
     } catch (error: any) {
       alert(
-        error.message ||
-          'Unable to update profile.'
+        error.message || 'Unable to update profile.'
       );
     } finally {
       setSaving(false);
@@ -179,7 +169,6 @@ export default function FacultyProfilePage() {
       role="faculty"
       title="Faculty Profile"
     >
-      {/* Header */}
       <div className="mb-7 flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <h2 className="text-2xl font-black">
@@ -201,9 +190,11 @@ export default function FacultyProfilePage() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[.7fr_1.3fr]">
+
         {/* Profile Card */}
         <section className="card p-6">
           <div className="flex flex-col items-center text-center">
+
             <div className="grid h-28 w-28 place-items-center overflow-hidden rounded-3xl bg-[#07162d] text-4xl font-black text-white">
               {form.avatar_url ? (
                 <img
@@ -223,8 +214,7 @@ export default function FacultyProfilePage() {
             </h3>
 
             <p className="mt-1 text-sm text-slate-400">
-              {form.designation ||
-                'Faculty Member'}
+              {form.designation || 'Faculty Member'}
             </p>
 
             <span className="mt-3 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
@@ -233,6 +223,7 @@ export default function FacultyProfilePage() {
           </div>
 
           <div className="mt-7 space-y-4 border-t pt-6">
+
             <div>
               <div className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
                 Email
@@ -262,13 +253,16 @@ export default function FacultyProfilePage() {
                 {form.designation || '-'}
               </div>
             </div>
+
           </div>
         </section>
 
         {/* Edit Form */}
         <section className="card overflow-hidden">
+
           <div className="border-b p-6">
             <div className="flex items-center gap-3">
+
               <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-600">
                 <UserRound size={19} />
               </div>
@@ -282,10 +276,12 @@ export default function FacultyProfilePage() {
                   Update your details below.
                 </p>
               </div>
+
             </div>
           </div>
 
           <div className="grid gap-5 p-6">
+
             {/* Name */}
             <div>
               <label className="label">
@@ -324,6 +320,7 @@ export default function FacultyProfilePage() {
 
             {/* Department + Designation */}
             <div className="grid gap-5 sm:grid-cols-2">
+
               <div>
                 <label className="label">
                   Department
@@ -335,8 +332,7 @@ export default function FacultyProfilePage() {
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      department:
-                        e.target.value,
+                      department: e.target.value,
                     })
                   }
                   placeholder="Example: ECE"
@@ -354,13 +350,13 @@ export default function FacultyProfilePage() {
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      designation:
-                        e.target.value,
+                      designation: e.target.value,
                     })
                   }
                   placeholder="Example: Assistant Professor"
                 />
               </div>
+
             </div>
 
             {/* Avatar */}
@@ -436,8 +432,7 @@ export default function FacultyProfilePage() {
                 onChange={(e) =>
                   setForm({
                     ...form,
-                    interests:
-                      e.target.value,
+                    interests: e.target.value,
                   })
                 }
                 placeholder="AI, Robotics, IoT"
@@ -450,13 +445,15 @@ export default function FacultyProfilePage() {
 
             {/* Social Links */}
             <div className="grid gap-5 sm:grid-cols-2">
+
               <div>
                 <label className="label">
                   GitHub
                 </label>
 
                 <div className="relative">
-                  <Github
+
+                  <ExternalLink
                     size={17}
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
                   />
@@ -467,12 +464,12 @@ export default function FacultyProfilePage() {
                     onChange={(e) =>
                       setForm({
                         ...form,
-                        github:
-                          e.target.value,
+                        github: e.target.value,
                       })
                     }
                     placeholder="https://github.com/..."
                   />
+
                 </div>
               </div>
 
@@ -482,7 +479,8 @@ export default function FacultyProfilePage() {
                 </label>
 
                 <div className="relative">
-                  <Linkedin
+
+                  <ExternalLink
                     size={17}
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
                   />
@@ -493,19 +491,22 @@ export default function FacultyProfilePage() {
                     onChange={(e) =>
                       setForm({
                         ...form,
-                        linkedin:
-                          e.target.value,
+                        linkedin: e.target.value,
                       })
                     }
                     placeholder="https://linkedin.com/in/..."
                   />
+
                 </div>
               </div>
+
             </div>
+
           </div>
 
           {/* Footer */}
           <div className="flex justify-end border-t p-6">
+
             <button
               onClick={saveProfile}
               disabled={saving}
@@ -517,8 +518,11 @@ export default function FacultyProfilePage() {
                 ? 'Saving...'
                 : 'Save Profile'}
             </button>
+
           </div>
+
         </section>
+
       </div>
     </DashboardShell>
   );
