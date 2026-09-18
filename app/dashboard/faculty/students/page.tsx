@@ -19,6 +19,7 @@ export default function StudentsPage() {
 
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [studentEmail, setStudentEmail] = useState('');
+  const [userRole, setUserRole] = useState<'student' | 'faculty'>('student');
   const [adding, setAdding] = useState(false);
   const [success, setSuccess] = useState('');
 
@@ -44,14 +45,14 @@ export default function StudentsPage() {
     setLoading(false);
   }
 
-  async function addStudent() {
+  async function addUser() {
     setError('');
     setSuccess('');
 
     const email = studentEmail.trim().toLowerCase();
 
     if (!email) {
-      setError('Please enter the student college email.');
+      setError('Please enter the college email.');
       return;
     }
 
@@ -78,12 +79,13 @@ export default function StudentsPage() {
       .from('approved_students')
       .insert({
         email,
+        role: userRole,
         created_by: user.id,
       });
 
     if (error) {
       if (error.code === '23505') {
-        setError('This student email is already approved.');
+        setError('This email is already approved.');
       } else {
         setError(error.message);
       }
@@ -93,12 +95,12 @@ export default function StudentsPage() {
     }
 
     setSuccess(
-      'Student email approved successfully. The student can now create an account using this email.'
+      `${userRole === 'student' ? 'Student' : 'Faculty'} email approved successfully.`
     );
 
     setStudentEmail('');
+    setUserRole('student');
     setShowAddStudent(false);
-
     setAdding(false);
 
     await loadStudents();
@@ -142,11 +144,13 @@ export default function StudentsPage() {
               onClick={() => {
                 setError('');
                 setSuccess('');
+                setStudentEmail('');
+                setUserRole('student');
                 setShowAddStudent(true);
               }}
               className="rounded-xl bg-blue-600 px-5 py-3 font-bold text-white shadow-lg hover:bg-blue-700"
             >
-              + Add Student
+              + Add User
             </button>
 
           </div>
@@ -221,7 +225,6 @@ export default function StudentsPage() {
             <table className="w-full text-left">
 
               <thead className="bg-slate-50">
-
                 <tr>
                   <th className="p-4 font-bold">
                     Student
@@ -243,7 +246,6 @@ export default function StudentsPage() {
                     Status
                   </th>
                 </tr>
-
               </thead>
 
               <tbody>
@@ -274,7 +276,6 @@ export default function StudentsPage() {
                     >
 
                       <td className="p-4">
-
                         <p className="font-bold text-slate-900">
                           {student.full_name}
                         </p>
@@ -282,7 +283,6 @@ export default function StudentsPage() {
                         <p className="text-sm text-slate-500">
                           {student.email || 'No email'}
                         </p>
-
                       </td>
 
                       <td className="p-4 text-slate-600">
@@ -298,11 +298,9 @@ export default function StudentsPage() {
                       </td>
 
                       <td className="p-4">
-
                         <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-bold text-green-700">
                           Active
                         </span>
-
                       </td>
 
                     </tr>
@@ -310,14 +308,12 @@ export default function StudentsPage() {
                 )}
 
               </tbody>
-
             </table>
 
           </div>
-
         </div>
 
-        {/* Add Student Modal */}
+        {/* Add User Modal */}
         {showAddStudent && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
 
@@ -327,11 +323,11 @@ export default function StudentsPage() {
 
                 <div>
                   <h2 className="text-2xl font-black text-slate-900">
-                    Add Student
+                    Add User
                   </h2>
 
                   <p className="mt-1 text-sm text-slate-500">
-                    Approve a college email for student access.
+                    Approve a college email for portal access.
                   </p>
                 </div>
 
@@ -344,6 +340,7 @@ export default function StudentsPage() {
 
               </div>
 
+              {/* Email */}
               <div className="mt-6">
 
                 <label className="text-sm font-bold text-slate-700">
@@ -354,7 +351,7 @@ export default function StudentsPage() {
                   type="email"
                   value={studentEmail}
                   onChange={(e) => setStudentEmail(e.target.value)}
-                  placeholder="student@ece.ritchennai.edu.in"
+                  placeholder="name@ece.ritchennai.edu.in"
                   className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
 
@@ -364,6 +361,56 @@ export default function StudentsPage() {
 
               </div>
 
+              {/* Role */}
+              <div className="mt-6">
+
+                <label className="text-sm font-bold text-slate-700">
+                  User Role
+                </label>
+
+                <div className="mt-3 grid grid-cols-2 gap-3">
+
+                  <button
+                    type="button"
+                    onClick={() => setUserRole('student')}
+                    className={`rounded-xl border px-4 py-4 text-left transition ${
+                      userRole === 'student'
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="font-black">
+                      👨‍🎓 Student
+                    </div>
+
+                    <div className="mt-1 text-xs">
+                      Student Dashboard
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setUserRole('faculty')}
+                    className={`rounded-xl border px-4 py-4 text-left transition ${
+                      userRole === 'faculty'
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="font-black">
+                      👨‍🏫 Faculty
+                    </div>
+
+                    <div className="mt-1 text-xs">
+                      Faculty Dashboard
+                    </div>
+                  </button>
+
+                </div>
+
+              </div>
+
+              {/* Buttons */}
               <div className="mt-6 flex gap-3">
 
                 <button
@@ -374,17 +421,16 @@ export default function StudentsPage() {
                 </button>
 
                 <button
-                  onClick={addStudent}
+                  onClick={addUser}
                   disabled={adding}
                   className="flex-1 rounded-xl bg-blue-600 px-4 py-3 font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {adding ? 'Adding...' : 'Approve Student'}
+                  {adding ? 'Approving...' : 'Approve User'}
                 </button>
 
               </div>
 
             </div>
-
           </div>
         )}
 
