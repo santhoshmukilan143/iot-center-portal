@@ -4,815 +4,522 @@ import { useEffect, useState } from 'react';
 import DashboardShell from '@/components/DashboardShell';
 import { supabase } from '@/lib/supabase';
 import {
-  FolderKanban,
-  Plus,
-  Pencil,
-  Trash2,
-  RefreshCw,
-  X,
-  Save,
-  Github,
-  ExternalLink,
-  Users,
   UserRound,
+  Save,
+  RefreshCw,
+  ExternalLink,
 } from 'lucide-react';
-
-type Project = {
-  id: string;
-  title: string;
-  description: string | null;
-  image_url: string | null;
-  group_id: string | null;
-  mentor_id: string | null;
-  technologies: string[] | null;
-  stage: string;
-  progress: number;
-  github_url: string | null;
-  demo_url: string | null;
-  documentation_url: string | null;
-  featured: boolean;
-  created_at: string;
-};
-
-type Group = {
-  id: string;
-  name: string;
-};
 
 type Profile = {
   id: string;
   full_name: string;
   email: string | null;
+  avatar_url: string | null;
+  department: string | null;
+  designation: string | null;
+  bio: string | null;
+  skills: string[] | null;
+  interests: string[] | null;
+  github: string | null;
+  linkedin: string | null;
 };
 
-export default function FacultyProjectsPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+const emptyForm = {
+  full_name: '',
+  email: '',
+  avatar_url: '',
+  department: '',
+  designation: '',
+  bio: '',
+  skills: '',
+  interests: '',
+  github: '',
+  linkedin: '',
+};
+
+export default function FacultyProfilePage() {
+  const [profile, setProfile] =
+    useState<Profile | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState(emptyForm);
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
-  const [groupId, setGroupId] = useState('');
-  const [mentorId, setMentorId] = useState('');
-  const [technologies, setTechnologies] = useState('');
-  const [stage, setStage] = useState('idea');
-  const [progress, setProgress] = useState('0');
-  const [githubUrl, setGithubUrl] = useState('');
-  const [demoUrl, setDemoUrl] = useState('');
-  const [documentationUrl, setDocumentationUrl] = useState('');
-  const [featured, setFeatured] = useState(false);
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  async function loadData() {
+  async function loadProfile() {
     setLoading(true);
 
-    const { data: projectData, error: projectError } =
-      await supabase
-        .from('projects')
-        .select(
-          'id, title, description, image_url, group_id, mentor_id, technologies, stage, progress, github_url, demo_url, documentation_url, featured, created_at'
-        )
-        .order('created_at', { ascending: false });
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (projectError) {
-      console.error(projectError);
-      setProjects([]);
-    } else {
-      setProjects(projectData || []);
-    }
+      if (!user) {
+        throw new Error('User not logged in.');
+      }
 
-    const { data: groupData, error: groupError } =
-      await supabase
-        .from('groups')
-        .select('id, name')
-        .order('name', { ascending: true });
-
-    if (groupError) {
-      console.error(groupError);
-    } else {
-      setGroups(groupData || []);
-    }
-
-    const { data: profileData, error: profileError } =
-      await supabase
+      const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email')
-        .in('role', ['faculty', 'admin'])
-        .order('full_name', { ascending: true });
+        .select('*')
+        .eq('id', user.id)
+        .single();
 
-    if (profileError) {
-      console.error(profileError);
-    } else {
-      setProfiles(profileData || []);
+      if (error) throw error;
+
+      setProfile(data);
+
+      setForm({
+        full_name: data.full_name || '',
+        email: data.email || user.email || '',
+        avatar_url: data.avatar_url || '',
+        department: data.department || '',
+        designation: data.designation || '',
+        bio: data.bio || '',
+        skills: Array.isArray(data.skills)
+          ? data.skills.join(', ')
+          : '',
+        interests: Array.isArray(data.interests)
+          ? data.interests.join(', ')
+          : '',
+        github: data.github || '',
+        linkedin: data.linkedin || '',
+      });
+    } catch (error: any) {
+      alert(
+        error.message ||
+          'Unable to load profile.'
+      );
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
-  function resetForm() {
-    setTitle('');
-    setDescription('');
-    setImageUrl('');
-    setGroupId('');
-    setMentorId('');
-    setTechnologies('');
-    setStage('idea');
-    setProgress('0');
-    setGithubUrl('');
-    setDemoUrl('');
-    setDocumentationUrl('');
-    setFeatured(false);
-    setEditingId(null);
-  }
+  useEffect(() => {
+    loadProfile();
+  }, []);
 
-  function openCreate() {
-    resetForm();
-    setShowModal(true);
-  }
-
-  function openEdit(project: Project) {
-    setEditingId(project.id);
-    setTitle(project.title);
-    setDescription(project.description || '');
-    setImageUrl(project.image_url || '');
-    setGroupId(project.group_id || '');
-    setMentorId(project.mentor_id || '');
-    setTechnologies(project.technologies?.join(', ') || '');
-    setStage(project.stage || 'idea');
-    setProgress(String(project.progress ?? 0));
-    setGithubUrl(project.github_url || '');
-    setDemoUrl(project.demo_url || '');
-    setDocumentationUrl(project.documentation_url || '');
-    setFeatured(project.featured || false);
-    setShowModal(true);
-  }
-
-  async function saveProject() {
-    if (!title.trim()) {
-      alert('Please enter project title.');
-      return;
-    }
-
-    const progressNumber = Number(progress);
-
-    if (
-      Number.isNaN(progressNumber) ||
-      progressNumber < 0 ||
-      progressNumber > 100
-    ) {
-      alert('Progress must be between 0 and 100.');
+  async function saveProfile() {
+    if (!form.full_name.trim()) {
+      alert('Please enter your full name.');
       return;
     }
 
     setSaving(true);
 
-    const technologiesList = technologies
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    const payload = {
-      title: title.trim(),
-      description: description.trim() || null,
-      image_url: imageUrl.trim() || null,
-      group_id: groupId || null,
-      mentor_id: mentorId || null,
-      technologies: technologiesList,
-      stage,
-      progress: progressNumber,
-      github_url: githubUrl.trim() || null,
-      demo_url: demoUrl.trim() || null,
-      documentation_url: documentationUrl.trim() || null,
-      featured,
-    };
+      if (!user) {
+        throw new Error('User not logged in.');
+      }
 
-    let error;
+      const skills = form.skills
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
 
-    if (editingId) {
-      const result = await supabase
-        .from('projects')
-        .update(payload)
-        .eq('id', editingId);
+      const interests = form.interests
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
 
-      error = result.error;
-    } else {
-      const result = await supabase
-        .from('projects')
-        .insert(payload);
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: form.full_name.trim(),
+          avatar_url:
+            form.avatar_url.trim() || null,
+          department:
+            form.department.trim() || null,
+          designation:
+            form.designation.trim() || null,
+          bio: form.bio.trim() || null,
+          skills,
+          interests,
+          github:
+            form.github.trim() || null,
+          linkedin:
+            form.linkedin.trim() || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id);
 
-      error = result.error;
-    }
+      if (error) throw error;
 
-    if (error) {
-      alert(error.message);
-    } else {
-      setShowModal(false);
-      resetForm();
-      await loadData();
-    }
+      alert('Profile updated successfully.');
 
-    setSaving(false);
-  }
-
-  async function deleteProject(id: string) {
-    const confirmed = window.confirm(
-      'Are you sure you want to delete this project?'
-    );
-
-    if (!confirmed) return;
-
-    const { error } = await supabase
-      .from('projects')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      alert(error.message);
-    } else {
-      await loadData();
+      await loadProfile();
+    } catch (error: any) {
+      alert(
+        error.message ||
+          'Unable to update profile.'
+      );
+    } finally {
+      setSaving(false);
     }
   }
 
-  function getGroupName(id: string | null) {
-    if (!id) return 'No group';
-
+  if (loading) {
     return (
-      groups.find((group) => group.id === id)?.name ||
-      'Unknown group'
+      <DashboardShell
+        role="faculty"
+        title="Faculty Profile"
+      >
+        <div className="card p-10 text-center text-sm text-slate-400">
+          Loading profile...
+        </div>
+      </DashboardShell>
     );
-  }
-
-  function getMentorName(id: string | null) {
-    if (!id) return 'Not assigned';
-
-    return (
-      profiles.find((profile) => profile.id === id)?.full_name ||
-      'Unknown mentor'
-    );
-  }
-
-  function formatStage(value: string) {
-    return value.replaceAll('_', ' ');
   }
 
   return (
-    <DashboardShell role="faculty" title="Projects">
+    <DashboardShell
+      role="faculty"
+      title="Faculty Profile"
+    >
       {/* Header */}
-      <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div className="mb-7 flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h2 className="text-2xl font-black">Projects</h2>
+          <h2 className="text-2xl font-black">
+            Faculty Profile
+          </h2>
 
-          <p className="mt-1 text-sm text-slate-400">
-            Create and manage student research projects.
+          <p className="mt-1 text-sm text-slate-500">
+            Manage your faculty profile information.
           </p>
         </div>
 
-        <div className="flex gap-2">
-          <button
-            onClick={loadData}
-            className="btn border bg-white text-slate-700"
-          >
-            <RefreshCw size={16} />
-            Refresh
-          </button>
-
-          <button
-            onClick={openCreate}
-            className="btn bg-[#07162d] text-white"
-          >
-            <Plus size={17} />
-            Create Project
-          </button>
-        </div>
+        <button
+          onClick={loadProfile}
+          className="btn border bg-white text-slate-700"
+        >
+          <RefreshCw size={16} />
+          Refresh
+        </button>
       </div>
 
-      {/* Stats */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <div className="card p-5">
-          <p className="text-xs text-slate-400">
-            Total Projects
-          </p>
-
-          <p className="mt-1 text-2xl font-black">
-            {projects.length}
-          </p>
-        </div>
-
-        <div className="card p-5">
-          <p className="text-xs text-slate-400">
-            Completed
-          </p>
-
-          <p className="mt-1 text-2xl font-black">
-            {
-              projects.filter(
-                (project) => project.stage === 'completed'
-              ).length
-            }
-          </p>
-        </div>
-
-        <div className="card p-5">
-          <p className="text-xs text-slate-400">
-            Featured
-          </p>
-
-          <p className="mt-1 text-2xl font-black">
-            {
-              projects.filter(
-                (project) => project.featured
-              ).length
-            }
-          </p>
-        </div>
-      </div>
-
-      {/* Project List */}
-      {loading ? (
-        <div className="card p-10 text-center text-slate-500">
-          Loading projects...
-        </div>
-      ) : projects.length === 0 ? (
-        <div className="card p-12 text-center">
-          <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-            <FolderKanban size={28} />
-          </div>
-
-          <h3 className="mt-5 text-lg font-black">
-            No projects found
-          </h3>
-
-          <p className="mt-2 text-sm text-slate-400">
-            Create your first research project.
-          </p>
-
-          <button
-            onClick={openCreate}
-            className="btn mt-5 bg-[#07162d] text-white"
-          >
-            <Plus size={17} />
-            Create Project
-          </button>
-        </div>
-      ) : (
-        <div className="grid gap-5 lg:grid-cols-2">
-          {projects.map((project) => (
-            <article
-              key={project.id}
-              className="card overflow-hidden"
-            >
-              {project.image_url && (
+      <div className="grid gap-6 xl:grid-cols-[.7fr_1.3fr]">
+        {/* Profile Card */}
+        <section className="card p-6">
+          <div className="flex flex-col items-center text-center">
+            <div className="grid h-28 w-28 place-items-center overflow-hidden rounded-3xl bg-[#07162d] text-4xl font-black text-white">
+              {form.avatar_url ? (
                 <img
-                  src={project.image_url}
-                  alt={project.title}
-                  className="h-52 w-full object-cover"
+                  src={form.avatar_url}
+                  alt={form.full_name}
+                  className="h-full w-full object-cover"
                 />
+              ) : (
+                form.full_name
+                  .slice(0, 1)
+                  .toUpperCase() || 'F'
               )}
-
-              <div className="p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
-                    <FolderKanban size={21} />
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {project.featured && (
-                      <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-600">
-                        Featured
-                      </span>
-                    )}
-
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold capitalize text-blue-600">
-                      {formatStage(project.stage)}
-                    </span>
-                  </div>
-                </div>
-
-                <h3 className="mt-5 text-xl font-black">
-                  {project.title}
-                </h3>
-
-                {project.description && (
-                  <p className="mt-3 text-sm leading-6 text-slate-600">
-                    {project.description}
-                  </p>
-                )}
-
-                {/* Progress */}
-                <div className="mt-5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-500">
-                      Progress
-                    </span>
-
-                    <span className="font-black text-blue-600">
-                      {project.progress}%
-                    </span>
-                  </div>
-
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full rounded-full bg-blue-600"
-                      style={{
-                        width: `${project.progress}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Group / Mentor */}
-                <div className="mt-5 space-y-3 border-t pt-4">
-                  <div className="flex items-center gap-3 text-sm text-slate-500">
-                    <Users size={16} />
-
-                    <span>
-                      Group · {getGroupName(project.group_id)}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-3 text-sm text-slate-500">
-                    <UserRound size={16} />
-
-                    <span>
-                      Mentor · {getMentorName(project.mentor_id)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Technologies */}
-                {project.technologies &&
-                  project.technologies.length > 0 && (
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {project.technologies.map((tech) => (
-                        <span
-                          key={tech}
-                          className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600"
-                        >
-                          {tech}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                {/* Links */}
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {project.github_url && (
-                    <a
-                      href={project.github_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-xl bg-[#07162d] px-4 py-2.5 text-xs font-bold text-white"
-                    >
-                      <Github size={15} />
-                      GitHub
-                    </a>
-                  )}
-
-                  {project.demo_url && (
-                    <a
-                      href={project.demo_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-xl border bg-white px-4 py-2.5 text-xs font-bold text-slate-700"
-                    >
-                      <ExternalLink size={15} />
-                      Demo
-                    </a>
-                  )}
-
-                  {project.documentation_url && (
-                    <a
-                      href={project.documentation_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-xl border bg-white px-4 py-2.5 text-xs font-bold text-slate-700"
-                    >
-                      <ExternalLink size={15} />
-                      Documentation
-                    </a>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="mt-5 flex gap-2 border-t pt-4">
-                  <button
-                    onClick={() => openEdit(project)}
-                    className="btn flex-1 border bg-white text-slate-700"
-                  >
-                    <Pencil size={15} />
-                    Edit
-                  </button>
-
-                  <button
-                    onClick={() => deleteProject(project.id)}
-                    className="grid h-10 w-10 place-items-center rounded-xl border text-red-500 hover:bg-red-50"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
-
-      {/* Create / Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
-          <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b p-5">
-              <div>
-                <h3 className="text-lg font-black">
-                  {editingId
-                    ? 'Edit Project'
-                    : 'Create Project'}
-                </h3>
-
-                <p className="mt-1 text-xs text-slate-400">
-                  Add project information and research details.
-                </p>
-              </div>
-
-              <button
-                onClick={() => {
-                  setShowModal(false);
-                  resetForm();
-                }}
-                className="grid h-9 w-9 place-items-center rounded-lg hover:bg-slate-100"
-              >
-                <X size={18} />
-              </button>
             </div>
 
-            <div className="space-y-4 p-5">
-              <div>
-                <label className="text-sm font-bold">
-                  Project Title
-                </label>
+            <h3 className="mt-5 text-xl font-black">
+              {form.full_name || 'Faculty'}
+            </h3>
 
-                <input
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="input mt-2 w-full"
-                  placeholder="Project title"
-                />
+            <p className="mt-1 text-sm text-slate-400">
+              {form.designation ||
+                'Faculty Member'}
+            </p>
+
+            <span className="mt-3 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+              Faculty
+            </span>
+          </div>
+
+          <div className="mt-7 space-y-4 border-t pt-6">
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                Email
+              </div>
+
+              <div className="mt-1 break-all text-sm font-semibold">
+                {form.email || '-'}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                Department
+              </div>
+
+              <div className="mt-1 text-sm font-semibold">
+                {form.department || '-'}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                Designation
+              </div>
+
+              <div className="mt-1 text-sm font-semibold">
+                {form.designation || '-'}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Edit Form */}
+        <section className="card overflow-hidden">
+          <div className="border-b p-6">
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-600">
+                <UserRound size={19} />
               </div>
 
               <div>
-                <label className="text-sm font-bold">
-                  Description
-                </label>
-
-                <textarea
-                  value={description}
-                  onChange={(e) =>
-                    setDescription(e.target.value)
-                  }
-                  rows={4}
-                  className="input mt-2 w-full resize-none"
-                  placeholder="Describe the project..."
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-bold">
-                  Image URL
-                </label>
-
-                <input
-                  value={imageUrl}
-                  onChange={(e) =>
-                    setImageUrl(e.target.value)
-                  }
-                  className="input mt-2 w-full"
-                  placeholder="https://..."
-                />
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="text-sm font-bold">
-                    Student Group
-                  </label>
-
-                  <select
-                    value={groupId}
-                    onChange={(e) =>
-                      setGroupId(e.target.value)
-                    }
-                    className="input mt-2 w-full"
-                  >
-                    <option value="">
-                      Select group
-                    </option>
-
-                    {groups.map((group) => (
-                      <option
-                        key={group.id}
-                        value={group.id}
-                      >
-                        {group.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-bold">
-                    Mentor
-                  </label>
-
-                  <select
-                    value={mentorId}
-                    onChange={(e) =>
-                      setMentorId(e.target.value)
-                    }
-                    className="input mt-2 w-full"
-                  >
-                    <option value="">
-                      Select mentor
-                    </option>
-
-                    {profiles.map((profile) => (
-                      <option
-                        key={profile.id}
-                        value={profile.id}
-                      >
-                        {profile.full_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-bold">
-                  Technologies
-                </label>
-
-                <input
-                  value={technologies}
-                  onChange={(e) =>
-                    setTechnologies(e.target.value)
-                  }
-                  className="input mt-2 w-full"
-                  placeholder="ESP32, Python, React, Supabase"
-                />
+                <h3 className="font-extrabold">
+                  Profile Information
+                </h3>
 
                 <p className="mt-1 text-xs text-slate-400">
-                  Separate technologies using commas.
+                  Update your details below.
                 </p>
               </div>
+            </div>
+          </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="text-sm font-bold">
-                    Stage
-                  </label>
+          <div className="grid gap-5 p-6">
+            {/* Name */}
+            <div>
+              <label className="label">
+                Full Name *
+              </label>
 
-                  <select
-                    value={stage}
-                    onChange={(e) =>
-                      setStage(e.target.value)
-                    }
-                    className="input mt-2 w-full"
-                  >
-                    <option value="idea">Idea</option>
-                    <option value="research">Research</option>
-                    <option value="design">Design</option>
-                    <option value="development">
-                      Development
-                    </option>
-                    <option value="testing">Testing</option>
-                    <option value="completed">
-                      Completed
-                    </option>
-                  </select>
-                </div>
+              <input
+                className="input"
+                value={form.full_name}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    full_name: e.target.value,
+                  })
+                }
+                placeholder="Enter your full name"
+              />
+            </div>
 
-                <div>
-                  <label className="text-sm font-bold">
-                    Progress %
-                  </label>
+            {/* Email */}
+            <div>
+              <label className="label">
+                Email
+              </label>
+
+              <input
+                className="input bg-slate-50"
+                value={form.email}
+                disabled
+              />
+
+              <p className="mt-1 text-[11px] text-slate-400">
+                Email is managed by Supabase authentication.
+              </p>
+            </div>
+
+            {/* Department + Designation */}
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label className="label">
+                  Department
+                </label>
+
+                <input
+                  className="input"
+                  value={form.department}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      department:
+                        e.target.value,
+                    })
+                  }
+                  placeholder="Example: ECE"
+                />
+              </div>
+
+              <div>
+                <label className="label">
+                  Designation
+                </label>
+
+                <input
+                  className="input"
+                  value={form.designation}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      designation:
+                        e.target.value,
+                    })
+                  }
+                  placeholder="Example: Assistant Professor"
+                />
+              </div>
+            </div>
+
+            {/* Avatar */}
+            <div>
+              <label className="label">
+                Profile Image URL
+              </label>
+
+              <input
+                className="input"
+                value={form.avatar_url}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    avatar_url: e.target.value,
+                  })
+                }
+                placeholder="https://..."
+              />
+            </div>
+
+            {/* Bio */}
+            <div>
+              <label className="label">
+                Bio
+              </label>
+
+              <textarea
+                className="input min-h-28"
+                value={form.bio}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    bio: e.target.value,
+                  })
+                }
+                placeholder="Write a short bio..."
+              />
+            </div>
+
+            {/* Skills */}
+            <div>
+              <label className="label">
+                Skills
+              </label>
+
+              <input
+                className="input"
+                value={form.skills}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    skills: e.target.value,
+                  })
+                }
+                placeholder="IoT, Embedded Systems, VLSI"
+              />
+
+              <p className="mt-1 text-[11px] text-slate-400">
+                Separate multiple skills with commas.
+              </p>
+            </div>
+
+            {/* Interests */}
+            <div>
+              <label className="label">
+                Research Interests
+              </label>
+
+              <input
+                className="input"
+                value={form.interests}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    interests:
+                      e.target.value,
+                  })
+                }
+                placeholder="AI, Robotics, IoT"
+              />
+
+              <p className="mt-1 text-[11px] text-slate-400">
+                Separate multiple interests with commas.
+              </p>
+            </div>
+
+            {/* Social Links */}
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label className="label">
+                  GitHub
+                </label>
+
+                <div className="relative">
+                  <ExternalLink
+                    size={17}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
 
                   <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={progress}
+                    className="input pl-10"
+                    value={form.github}
                     onChange={(e) =>
-                      setProgress(e.target.value)
+                      setForm({
+                        ...form,
+                        github:
+                          e.target.value,
+                      })
                     }
-                    className="input mt-2 w-full"
+                    placeholder="https://github.com/..."
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-sm font-bold">
-                  GitHub URL
+                <label className="label">
+                  LinkedIn
                 </label>
 
-                <input
-                  value={githubUrl}
-                  onChange={(e) =>
-                    setGithubUrl(e.target.value)
-                  }
-                  className="input mt-2 w-full"
-                  placeholder="https://github.com/..."
-                />
-              </div>
+                <div className="relative">
+                  <ExternalLink
+                    size={17}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
 
-              <div>
-                <label className="text-sm font-bold">
-                  Demo URL
-                </label>
-
-                <input
-                  value={demoUrl}
-                  onChange={(e) =>
-                    setDemoUrl(e.target.value)
-                  }
-                  className="input mt-2 w-full"
-                  placeholder="https://..."
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-bold">
-                  Documentation URL
-                </label>
-
-                <input
-                  value={documentationUrl}
-                  onChange={(e) =>
-                    setDocumentationUrl(e.target.value)
-                  }
-                  className="input mt-2 w-full"
-                  placeholder="https://..."
-                />
-              </div>
-
-              <label className="flex cursor-pointer items-center gap-3 rounded-xl border p-4">
-                <input
-                  type="checkbox"
-                  checked={featured}
-                  onChange={(e) =>
-                    setFeatured(e.target.checked)
-                  }
-                  className="h-5 w-5"
-                />
-
-                <div>
-                  <div className="text-sm font-bold">
-                    Featured Project
-                  </div>
-
-                  <div className="mt-1 text-xs text-slate-400">
-                    Highlight this project in the portal.
-                  </div>
+                  <input
+                    className="input pl-10"
+                    value={form.linkedin}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        linkedin:
+                          e.target.value,
+                      })
+                    }
+                    placeholder="https://linkedin.com/in/..."
+                  />
                 </div>
-              </label>
-            </div>
-
-            <div className="flex justify-end gap-2 border-t p-5">
-              <button
-                onClick={() => {
-                  setShowModal(false);
-                  resetForm();
-                }}
-                className="btn border bg-white text-slate-700"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={saveProject}
-                disabled={saving}
-                className="btn bg-[#07162d] text-white disabled:opacity-50"
-              >
-                <Save size={16} />
-
-                {saving
-                  ? 'Saving...'
-                  : editingId
-                    ? 'Update Project'
-                    : 'Create Project'}
-              </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+
+          {/* Footer */}
+          <div className="flex justify-end border-t p-6">
+            <button
+              onClick={saveProfile}
+              disabled={saving}
+              className="btn bg-[#07162d] text-white"
+            >
+              <Save size={16} />
+
+              {saving
+                ? 'Saving...'
+                : 'Save Profile'}
+            </button>
+          </div>
+        </section>
+      </div>
     </DashboardShell>
   );
 }
