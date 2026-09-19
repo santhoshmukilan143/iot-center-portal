@@ -1,17 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import DashboardShell from '@/components/DashboardShell';
-import StatusPill from '@/components/StatusPill';
-import { supabase } from '@/lib/supabase';
+import Link from 'next/link';
 import {
-  CalendarDays,
-  CheckCircle2,
-  Clock3,
-  FileText,
+  CheckSquare,
   RefreshCw,
-  Target,
+  CalendarDays,
+  Paperclip,
+  ArrowUpRight,
+  Clock3,
 } from 'lucide-react';
+
+import DashboardShell from '@/components/DashboardShell';
+import { supabase } from '@/lib/supabase';
 
 type Task = {
   id: string;
@@ -19,311 +20,403 @@ type Task = {
   description: string | null;
   topic: string | null;
   instructions: string | null;
+  assigned_to: string | null;
+  group_id: string | null;
   start_date: string | null;
   deadline: string | null;
   priority: string | null;
+  attachment_url: string | null;
   marks: number | null;
+  submission_type: string | null;
+  created_at: string;
 };
 
-type Submission = {
-  task_id: string;
-  status: string;
-  marks: number | null;
+type GroupMembership = {
+  group_id: string;
 };
 
 export default function StudentTasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  async function loadTasks() {
+    setLoading(true);
+    setError('');
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setTasks([]);
+        setLoading(false);
+        return;
+      }
+
+      /*
+       * Get all groups where this student is a member.
+       */
+      const { data: memberships, error: membershipError } =
+        await supabase
+          .from('group_members')
+          .select('group_id')
+          .eq('user_id', user.id);
+
+      if (membershipError) {
+        throw membershipError;
+      }
+
+      const groupIds =
+        (memberships as GroupMembership[] | null)?.map(
+          (item) => item.group_id
+        ) || [];
+
+      /*
+       * Get tasks.
+       *
+       * We fetch all tasks and filter them here because
+       * the student can receive:
+       *
+       * 1. General task
+       * 2. Personal task
+       * 3. Group task
+       */
+      const { data, error: taskError } = await supabase
+        .from('tasks')
+        .select(
+          `
+          id,
+          title,
+          description,
+          topic,
+          instructions,
+          assigned_to,
+          group_id,
+          start_date,
+          deadline,
+          priority,
+          attachment_url,
+          marks,
+          submission_type,
+          created_at
+          `
+        )
+        .order('created_at', {
+          ascending: false,
+        });
+
+      if (taskError) {
+        throw taskError;
+      }
+
+      const allTasks = (data || []) as Task[];
+
+      /*
+       * Assignment rules:
+       *
+       * General:
+       * assigned_to = null
+       * group_id = null
+       *
+       * Specific student:
+       * assigned_to = current user
+       *
+       * Specific group:
+       * group_id belongs to student's groups
+       */
+      const visibleTasks = allTasks.filter((task) => {
+        const isGeneral =
+          task.assigned_to === null &&
+          task.group_id === null;
+
+        const isAssignedToStudent =
+          task.assigned_to === user.id;
+
+        const isAssignedToGroup =
+          task.group_id !== null &&
+          groupIds.includes(task.group_id);
+
+        return (
+          isGeneral ||
+          isAssignedToStudent ||
+          isAssignedToGroup
+        );
+      });
+
+      setTasks(visibleTasks);
+    } catch (err: any) {
+      console.error(err);
+
+      setError(
+        err?.message ||
+          'Unable to load tasks.'
+      );
+
+      setTasks([]);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     loadTasks();
   }, []);
 
-  async function loadTasks() {
-    setLoading(true);
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    const { data: taskData, error: taskError } = await supabase
-      .from('tasks')
-      .select(
-        'id, title, description, topic, instructions, start_date, deadline, priority, marks'
-      )
-      .or(`assigned_to.eq.${user.id},assigned_to.is.null`)
-      .order('deadline', { ascending: true });
-
-    if (taskError) {
-      console.error(taskError);
-      setTasks([]);
-    } else {
-      setTasks(taskData || []);
-    }
-
-    const { data: submissionData, error: submissionError } =
-      await supabase
-        .from('task_submissions')
-        .select('task_id, status, marks')
-        .eq('student_id', user.id);
-
-    if (!submissionError) {
-      setSubmissions(submissionData || []);
-    }
-
-    setLoading(false);
-  }
-
-  function getSubmission(taskId: string) {
-    return submissions.find((item) => item.task_id === taskId);
-  }
-
   function formatDate(date: string | null) {
-    if (!date) return 'No deadline';
+    if (!date) return 'Not set';
 
-    return new Date(date).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
+    return new Date(date).toLocaleDateString(
+      'en-IN',
+      {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }
+    );
   }
 
-  function getTaskStatus(task: Task) {
-    const submission = getSubmission(task.id);
-
-    if (submission) {
-      return submission.status;
+  function assignmentLabel(task: Task) {
+    if (
+      task.assigned_to === null &&
+      task.group_id === null
+    ) {
+      return 'General Task';
     }
 
-    if (task.deadline) {
-      const deadline = new Date(`${task.deadline}T23:59:59`);
-      if (deadline < new Date()) {
-        return 'overdue';
-      }
+    if (task.assigned_to) {
+      return 'Assigned to you';
     }
 
-    return 'pending';
+    if (task.group_id) {
+      return 'Group Task';
+    }
+
+    return 'Task';
+  }
+
+  function priorityClass(priority: string | null) {
+    if (priority === 'urgent') {
+      return 'bg-red-50 text-red-600';
+    }
+
+    if (priority === 'high') {
+      return 'bg-orange-50 text-orange-600';
+    }
+
+    return 'bg-slate-100 text-slate-600';
   }
 
   return (
-    <DashboardShell role="student" title="Tasks">
-      <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h2 className="text-2xl font-black">My Tasks</h2>
+    <DashboardShell
+      role="student"
+      title="Tasks"
+    >
+      <div className="space-y-6">
 
-          <p className="mt-1 text-sm text-slate-400">
-            Tasks assigned to you by the faculty.
-          </p>
-        </div>
+        {/* Header */}
+        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
 
-        <button
-          onClick={loadTasks}
-          className="btn border bg-white text-slate-700"
-        >
-          <RefreshCw size={16} />
-          Refresh
-        </button>
-      </div>
+          <div>
+            <h2 className="text-2xl font-black">
+              My Tasks
+            </h2>
 
-      {/* Stats */}
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="card p-5">
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-amber-50 text-amber-600">
-              <Clock3 size={19} />
-            </div>
-
-            <div>
-              <p className="text-xs text-slate-400">Pending</p>
-              <p className="text-xl font-black">
-                {tasks.filter((t) => getTaskStatus(t) === 'pending').length}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="card p-5">
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-600">
-              <Target size={19} />
-            </div>
-
-            <div>
-              <p className="text-xs text-slate-400">In Progress</p>
-              <p className="text-xl font-black">
-                {
-                  tasks.filter(
-                    (t) => getTaskStatus(t) === 'in_progress'
-                  ).length
-                }
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="card p-5">
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-green-50 text-green-600">
-              <CheckCircle2 size={19} />
-            </div>
-
-            <div>
-              <p className="text-xs text-slate-400">Submitted</p>
-              <p className="text-xl font-black">
-                {
-                  tasks.filter(
-                    (t) => getTaskStatus(t) === 'submitted'
-                  ).length
-                }
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="card p-5">
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-red-50 text-red-600">
-              <CalendarDays size={19} />
-            </div>
-
-            <div>
-              <p className="text-xs text-slate-400">Overdue</p>
-              <p className="text-xl font-black">
-                {
-                  tasks.filter(
-                    (t) => getTaskStatus(t) === 'overdue'
-                  ).length
-                }
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tasks */}
-      {loading ? (
-        <div className="card p-10 text-center text-slate-500">
-          Loading tasks...
-        </div>
-      ) : tasks.length === 0 ? (
-        <div className="card p-12 text-center">
-          <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-blue-50 text-blue-600">
-            <FileText size={28} />
+            <p className="mt-1 text-sm text-slate-400">
+              Tasks assigned to you, your group, or all students.
+            </p>
           </div>
 
-          <h3 className="mt-5 text-lg font-black">
-            No tasks assigned
-          </h3>
+          <button
+            onClick={loadTasks}
+            disabled={loading}
+            className="btn border bg-white text-slate-700"
+          >
+            <RefreshCw
+              size={16}
+              className={
+                loading
+                  ? 'animate-spin'
+                  : ''
+              }
+            />
 
-          <p className="mt-2 text-sm text-slate-400">
-            Tasks assigned by faculty will appear here.
-          </p>
+            Refresh
+          </button>
+
         </div>
-      ) : (
-        <div className="space-y-4">
-          {tasks.map((task) => {
-            const status = getTaskStatus(task);
-            const submission = getSubmission(task.id);
 
-            return (
-              <div
+        {/* Error */}
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-600">
+            {error}
+          </div>
+        )}
+
+        {/* Loading */}
+        {loading ? (
+          <div className="card p-12 text-center">
+
+            <RefreshCw
+              size={25}
+              className="mx-auto animate-spin text-blue-600"
+            />
+
+            <p className="mt-3 text-sm text-slate-400">
+              Loading your tasks...
+            </p>
+
+          </div>
+        ) : tasks.length === 0 ? (
+          /* Empty */
+          <div className="card p-12 text-center">
+
+            <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-blue-50 text-blue-600">
+              <CheckSquare size={28} />
+            </div>
+
+            <h3 className="mt-5 text-lg font-black">
+              No tasks available
+            </h3>
+
+            <p className="mt-2 text-sm text-slate-400">
+              You don't have any assigned tasks right now.
+            </p>
+
+          </div>
+        ) : (
+          /* Tasks */
+          <div className="space-y-4">
+
+            {tasks.map((task) => (
+              <Link
                 key={task.id}
-                className="card p-5 transition hover:shadow-lg"
+                href={`/dashboard/student/tasks/${task.id}`}
+                className="group block"
               >
-                <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-lg font-black">
-                        {task.title}
-                      </h3>
+                <article className="card overflow-hidden transition hover:-translate-y-0.5 hover:shadow-lg">
 
-                      <StatusPill status={status as any} />
-                    </div>
+                  <div className="p-5">
 
-                    {task.topic && (
-                      <div className="mt-2 text-xs font-bold text-blue-600">
-                        Topic · {task.topic}
-                      </div>
-                    )}
+                    <div className="flex flex-col justify-between gap-5 md:flex-row">
 
-                    {task.description && (
-                      <p className="mt-3 text-sm leading-6 text-slate-600">
-                        {task.description}
-                      </p>
-                    )}
+                      {/* Left */}
+                      <div className="min-w-0">
 
-                    {task.instructions && (
-                      <div className="mt-4 rounded-xl bg-slate-50 p-4">
-                        <div className="text-xs font-black uppercase tracking-wide text-slate-500">
-                          Instructions
-                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
 
-                        <p className="mt-2 whitespace-pre-line text-sm text-slate-600">
-                          {task.instructions}
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-600">
+                            <CheckSquare size={21} />
+                          </div>
 
-                  <div className="shrink-0 rounded-2xl border bg-white p-4 lg:min-w-52">
-                    <div className="text-xs text-slate-400">
-                      Deadline
-                    </div>
+                          <h3 className="text-lg font-black">
+                            {task.title}
+                          </h3>
 
-                    <div className="mt-1 flex items-center gap-2 text-sm font-black">
-                      <CalendarDays size={16} />
-                      {formatDate(task.deadline)}
-                    </div>
-
-                    {task.priority && (
-                      <div className="mt-3">
-                        <span className="text-xs text-slate-400">
-                          Priority
-                        </span>
-
-                        <div className="mt-1 text-sm font-bold capitalize">
-                          {task.priority}
-                        </div>
-                      </div>
-                    )}
-
-                    {task.marks !== null && (
-                      <div className="mt-3">
-                        <span className="text-xs text-slate-400">
-                          Maximum Marks
-                        </span>
-
-                        <div className="mt-1 text-sm font-bold">
-                          {task.marks}
-                        </div>
-                      </div>
-                    )}
-
-                    {submission?.marks !== null &&
-                      submission?.marks !== undefined && (
-                        <div className="mt-3">
-                          <span className="text-xs text-slate-400">
-                            Your Marks
+                          <span
+                            className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${priorityClass(
+                              task.priority
+                            )}`}
+                          >
+                            {task.priority || 'normal'}
                           </span>
 
-                          <div className="mt-1 text-sm font-black text-green-600">
-                            {submission.marks}
-                          </div>
                         </div>
-                      )}
+
+                        {/* Topic */}
+                        {task.topic && (
+                          <div className="mt-4 text-sm font-bold text-blue-600">
+                            Topic · {task.topic}
+                          </div>
+                        )}
+
+                        {/* Description */}
+                        {task.description && (
+                          <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-500">
+                            {task.description}
+                          </p>
+                        )}
+
+                        {/* Tags */}
+                        <div className="mt-4 flex flex-wrap gap-2">
+
+                          <span className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700">
+                            {assignmentLabel(task)}
+                          </span>
+
+                          {task.attachment_url && (
+                            <span className="flex items-center gap-1 rounded-lg bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700">
+                              <Paperclip size={13} />
+                              Faculty Attachment
+                            </span>
+                          )}
+
+                        </div>
+
+                      </div>
+
+                      {/* Right */}
+                      <div className="flex shrink-0 flex-col gap-3 md:items-end">
+
+                        <div className="rounded-xl bg-slate-50 px-4 py-3">
+
+                          <div className="flex items-center gap-2 text-xs text-slate-400">
+                            <CalendarDays size={14} />
+                            Deadline
+                          </div>
+
+                          <div className="mt-1 text-sm font-black text-slate-700">
+                            {formatDate(task.deadline)}
+                          </div>
+
+                        </div>
+
+                        {task.marks !== null && (
+                          <div className="text-xs font-semibold text-slate-400">
+                            Marks · {task.marks}
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-2 text-sm font-bold text-blue-600">
+                          Open Task
+                          <ArrowUpRight
+                            size={16}
+                            className="transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                          />
+                        </div>
+
+                      </div>
+
+                    </div>
+
                   </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+
+                  {/* Bottom */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-slate-50/70 px-5 py-3">
+
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+
+                      <Clock3 size={14} />
+
+                      Created · {formatDate(task.created_at)}
+
+                    </div>
+
+                    <div className="text-xs font-semibold text-slate-500">
+                      Click to view instructions & submit
+                    </div>
+
+                  </div>
+
+                </article>
+              </Link>
+            ))}
+
+          </div>
+        )}
+
+      </div>
     </DashboardShell>
   );
 }
