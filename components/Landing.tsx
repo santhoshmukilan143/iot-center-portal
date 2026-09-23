@@ -1,7 +1,8 @@
-// Vercel deployment refresh 2
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
+
 import {
   ArrowRight,
   BrainCircuit,
@@ -9,7 +10,6 @@ import {
   ChevronRight,
   Code2,
   Cpu,
-  Database,
   ExternalLink,
   GalleryHorizontalEnd,
   GraduationCap,
@@ -61,6 +61,7 @@ const projects = [
 export default function Landing() {
   return (
     <main>
+      {/* NAVBAR */}
       <nav className="fixed inset-x-0 top-0 z-40 border-b border-white/20 bg-white/75 px-5 backdrop-blur-xl">
         <div className="mx-auto flex h-18 max-w-7xl items-center justify-between">
           <Logo />
@@ -80,11 +81,14 @@ export default function Landing() {
         </div>
       </nav>
 
+      {/* HERO */}
       <section className="grid-bg relative overflow-hidden bg-[#07162d] px-5 pb-24 pt-36 text-white">
         <div className="absolute -right-32 top-10 h-96 w-96 rounded-full bg-cyan-400/20 blur-3xl" />
+
         <div className="absolute -left-20 bottom-0 h-72 w-72 rounded-full bg-blue-600/20 blur-3xl" />
 
         <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.1fr_.9fr]">
+          {/* LEFT HERO CONTENT */}
           <div>
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-bold uppercase tracking-[.2em] text-cyan-200">
               <Wifi size={14} />
@@ -94,7 +98,9 @@ export default function Landing() {
             <h1 className="max-w-4xl text-5xl font-black leading-[1.02] tracking-[-.04em] md:text-7xl">
               IoT Innovation
               <br />
-              <span className="gradient-text">& Research Center</span>
+              <span className="gradient-text">
+                &amp; Research Center
+              </span>
             </h1>
 
             <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-300">
@@ -128,24 +134,37 @@ export default function Landing() {
                   className="rounded-2xl border border-white/10 bg-white/5 p-4"
                 >
                   <div className="text-2xl font-black">{x[0]}</div>
-                  <div className="mt-1 text-xs text-slate-400">{x[1]}</div>
+                  <div className="mt-1 text-xs text-slate-400">
+                    {x[1]}
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
+          {/* RIGHT HERO LOGO BOX */}
           <div className="relative">
             <div className="mx-auto aspect-square max-w-[510px] rounded-[40px] border border-white/10 bg-white/[.045] p-5 shadow-2xl">
               <div className="relative h-full overflow-hidden rounded-[30px] border border-cyan-300/10 bg-[radial-gradient(circle_at_center,rgba(21,216,229,.18),transparent_48%)]">
                 <div className="absolute inset-10 rounded-full border border-cyan-300/15" />
+
                 <div className="absolute inset-24 rounded-full border border-blue-400/20" />
 
+                {/* IoT CENTRE LOGO */}
                 <div className="absolute inset-0 grid place-items-center">
-                  <div className="grid h-28 w-28 place-items-center rounded-3xl border border-cyan-200/30 bg-cyan-300/10 shadow-[0_0_90px_rgba(21,216,229,.2)]">
-                    <Cpu size={56} className="text-cyan-200" />
+                  <div className="grid h-44 w-44 place-items-center rounded-3xl border border-cyan-200/30 bg-white/95 p-5 shadow-[0_0_90px_rgba(21,216,229,.25)]">
+                    <Image
+                      src="/iot-centre-logo.jpg"
+                      alt="IoT Centre"
+                      width={170}
+                      height={170}
+                      priority
+                      className="h-full w-full object-contain"
+                    />
                   </div>
                 </div>
 
+                {/* TECHNOLOGY LABELS */}
                 {[
                   ['top-10 left-10', 'ESP32'],
                   ['top-20 right-8', 'AI / ML'],
@@ -169,6 +188,7 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ABOUT */}
       <section id="about" className="px-5 py-24">
         <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[.9fr_1.1fr]">
           <Reveal>
@@ -185,7 +205,9 @@ export default function Landing() {
             <div className="card p-7">
               <GraduationCap className="text-blue-600" />
 
-              <h3 className="mt-5 text-xl font-extrabold">Mission</h3>
+              <h3 className="mt-5 text-xl font-extrabold">
+                Mission
+              </h3>
 
               <p className="mt-2 leading-7 text-slate-600">
                 Build an accessible ecosystem where students and faculty can
@@ -197,7 +219,9 @@ export default function Landing() {
             <div className="card p-7">
               <Sparkles className="text-cyan-600" />
 
-              <h3 className="mt-5 text-xl font-extrabold">Vision</h3>
+              <h3 className="mt-5 text-xl font-extrabold">
+                Vision
+              </h3>
 
               <p className="mt-2 leading-7 text-slate-600">
                 Create industry-ready innovators through hands-on projects,
@@ -208,6 +232,7 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ACTIVITIES */}
       <section id="activities" className="bg-white px-5 py-24">
         <div className="mx-auto max-w-7xl">
           <Reveal>
@@ -228,7 +253,9 @@ export default function Landing() {
                     <Icon size={22} />
                   </div>
 
-                  <h3 className="mt-5 font-extrabold">{name}</h3>
+                  <h3 className="mt-5 font-extrabold">
+                    {name}
+                  </h3>
 
                   <p className="mt-2 text-sm leading-6 text-slate-500">
                     Labs, projects and collaborative learning workflows built
@@ -246,6 +273,7 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* PROJECTS */}
       <section id="projects" className="px-5 py-24">
         <div className="mx-auto max-w-7xl">
           <div className="flex items-end justify-between">
@@ -279,11 +307,15 @@ export default function Landing() {
                     <ExternalLink size={17} />
                   </div>
 
-                  <div className="mt-20 text-xl font-black">{name}</div>
+                  <div className="mt-20 text-xl font-black">
+                    {name}
+                  </div>
                 </div>
 
                 <div className="p-6">
-                  <p className="text-sm text-slate-500">{tech}</p>
+                  <p className="text-sm text-slate-500">
+                    {tech}
+                  </p>
 
                   <div className="mt-5 flex justify-between text-xs font-bold">
                     <span>{stage}</span>
@@ -303,7 +335,11 @@ export default function Landing() {
         </div>
       </section>
 
-      <section id="events" className="bg-[#07162d] px-5 py-24 text-white">
+      {/* EVENTS */}
+      <section
+        id="events"
+        className="bg-[#07162d] px-5 py-24 text-white"
+      >
         <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[1fr_.8fr]">
           <Reveal>
             <p className="text-sm font-black uppercase tracking-[.2em] text-cyan-300">
@@ -316,9 +352,21 @@ export default function Landing() {
 
             <div className="mt-8 space-y-3">
               {[
-                ['12 SEP', 'ESP32 Edge AI Workshop', 'IoT Lab • 10:00 AM'],
-                ['18 SEP', 'Research Review Meetup', 'Seminar Hall • 2:00 PM'],
-                ['25 SEP', 'Campus IoT Hackathon', 'Innovation Hub • 9:00 AM'],
+                [
+                  '12 SEP',
+                  'ESP32 Edge AI Workshop',
+                  'IoT Lab • 10:00 AM',
+                ],
+                [
+                  '18 SEP',
+                  'Research Review Meetup',
+                  'Seminar Hall • 2:00 PM',
+                ],
+                [
+                  '25 SEP',
+                  'Campus IoT Hackathon',
+                  'Innovation Hub • 9:00 AM',
+                ],
               ].map((e) => (
                 <div
                   key={e[0]}
@@ -336,7 +384,10 @@ export default function Landing() {
 
                   <div>
                     <div className="font-bold">{e[1]}</div>
-                    <div className="mt-1 text-sm text-slate-400">{e[2]}</div>
+
+                    <div className="mt-1 text-sm text-slate-400">
+                      {e[2]}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -362,6 +413,7 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* FOOTER */}
       <footer
         id="resources"
         className="border-t bg-white px-5 py-12"
@@ -371,7 +423,7 @@ export default function Landing() {
             <Logo />
 
             <p className="mt-4 max-w-sm text-sm leading-6 text-slate-500">
-              IoT Innovation & Research Center — a digital ecosystem for
+              IoT Innovation &amp; Research Center — a digital ecosystem for
               connected learning, research and innovation.
             </p>
           </div>
@@ -387,7 +439,7 @@ export default function Landing() {
         </div>
 
         <div className="mx-auto mt-10 max-w-7xl border-t pt-6 text-xs text-slate-400">
-          © 2026 IoT Innovation & Research Center. Built for academic
+          © 2026 IoT Innovation &amp; Research Center. Built for academic
           collaboration.
         </div>
       </footer>
